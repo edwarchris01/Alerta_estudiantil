@@ -1,0 +1,71 @@
+version: '3.9'
+
+services:
+  # ── PostgreSQL ──
+  db:
+    image: postgres:15-alpine
+    container_name: sigae_db
+    environment:
+      POSTGRES_DB: sigae_db
+      POSTGRES_USER: sigae_user
+      POSTGRES_PASSWORD: sigae_secret
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U sigae_user -d sigae_db']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend FastAPI ──
+  backend:
+    build: ./backend
+    container_name: sigae_backend
+    ports:
+      - '8000:8000'
+    environment:
+      DATABASE_URL: postgresql+psycopg://sigae_user:sigae_secret@db:5432/sigae_db
+      SECRET_KEY: ${SECRET_KEY:-insecure-dev-secret-change-in-production}
+      CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000"]'
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          'import urllib.request; urllib.request.urlopen("http://localhost:8000/health", timeout=3)',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Frontend React ──
+  frontend:
+    build: ./frontend
+    container_name: sigae_frontend
+    ports:
+      - '5174:5173'
+    environment:
+      VITE_PROXY_TARGET: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+
+volumes:
+  pgdata:
