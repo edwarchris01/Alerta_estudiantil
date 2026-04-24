@@ -244,9 +244,21 @@ npm run dev
 ```
 
 **URLs:**
-- Frontend: http://localhost:5173
+- Frontend: http://localhost:5174
 - Backend API: http://localhost:8000
 - Documentación API: http://localhost:8000/docs
+
+### Despliegue en Render (backend)
+
+1. Crea un servicio web desde el repositorio y selecciona la carpeta `backend`.
+2. Render detectará el Dockerfile y construirá la imagen automáticamente.
+3. Configura variables de entorno:
+    - DATABASE_URL (Render la inyecta si usas PostgreSQL administrado; si llega como `postgres://`, se normaliza automaticamente)
+    - SECRET_KEY (obligatorio en producción)
+    - CORS_ORIGINS (lista JSON con dominios permitidos, ejemplo: ["https://tu-frontend.onrender.com"])
+    - AUTO_CREATE_TABLES=false (usa Alembic)
+4. El contenedor ejecuta migraciones al iniciar y expone `/health` para health checks.
+   - Respuesta esperada: {"status": "healthy"}
 
 ---
 

@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # ── Database ──
-    DATABASE_URL: str = "postgresql+psycopg://sigae_user:sigae_secret@localhost:5432/sigae_db"
+    DATABASE_URL: str | None = None
+    AUTO_CREATE_TABLES: bool = False
 
     # ── Security ──
     SECRET_KEY: str = "cambiar-en-produccion"
@@ -28,6 +29,26 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> List[str]:
         return json.loads(self.CORS_ORIGINS)
+
+    @property
+    def database_url(self) -> str:
+        raw_url = self.DATABASE_URL
+        if not raw_url:
+            raise RuntimeError(
+                "DATABASE_URL no esta configurada. Define la variable de entorno "
+                "DATABASE_URL en Render o en un archivo .env."
+            )
+
+        if raw_url.startswith("postgres://"):
+            raw_url = raw_url.replace("postgres://", "postgresql://", 1)
+
+        if raw_url.startswith("postgresql+psycopg://"):
+            raw_url = raw_url.replace("postgresql+psycopg://", "postgresql+psycopg2://", 1)
+
+        if raw_url.startswith("postgresql://"):
+            raw_url = raw_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+        return raw_url
 
     class Config:
         env_file = ".env"
