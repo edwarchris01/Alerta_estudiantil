@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Registro Offline - Aeropuerto Nuquí</title>
+    <link rel="manifest" href="./manifest.json" />
+    <meta name="theme-color" content="#007a33" />
+    <style>
+      :root { font-family: Arial, sans-serif; }
+      body { margin: 0; background: #fff; color: #000; }
+      .wrap { max-width: 760px; margin: 0 auto; padding: 14px; }
+      h1,h2 { margin: 8px 0 12px; }
+      .card { border: 2px solid #000; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+      .row { display: grid; gap: 10px; margin-bottom: 10px; }
+      .row.two { grid-template-columns: 1fr 1fr; }
+      label { font-weight: 700; font-size: 18px; }
+      input,select,textarea,button { width: 100%; min-height: 60px; font-size: 20px; border-radius: 8px; border: 2px solid #000; box-sizing: border-box; padding: 10px; }
+      button { font-weight: 700; cursor: pointer; }
+      .btn-green { background: #0f8a3f; color: #fff; border-color: #0f8a3f; }
+      .btn-black { background: #000; color: #fff; }
+      .btn-red { background: #aa1212; color: #fff; border-color: #aa1212; }
+      .btn-small { min-height: 46px; font-size: 16px; padding: 6px 8px; }
+      .hidden { display: none; }
+      table { width: 100%; border-collapse: collapse; font-size: 16px; }
+      th,td { border: 1px solid #000; padding: 6px; text-align: left; }
+      #reader { width: 100%; }
+      .counter { font-size: 22px; font-weight: 800; }
+      .top-actions { display: flex; gap: 10px; margin-bottom: 10px; }
+      .top-actions button { width: auto; flex: 1; min-height: 50px; font-size: 16px; }
+      .status { padding: 8px; background: #eef7ef; border-left: 6px solid #0f8a3f; margin-bottom: 10px; font-weight: 700; }
+      @media (max-width: 680px){ .row.two { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Aeropuerto Nuquí - Registro de Pasajeros</h1>
+      <div class="top-actions">
+        <button id="showRegistro" class="btn-black">Registro actual</button>
+        <button id="showHistorial" class="btn-black">Historial</button>
+      </div>
+
+      <section id="registroView">
+        <div class="card" id="flightCard">
+          <h2>Pantalla vuelo</h2>
+          <div class="row two">
+            <div>
+              <label for="airline">Aerolínea</label>
+              <select id="airline">
+                <option>Searca</option><option>San Germán</option><option>Charter</option>
+              </select>
+            </div>
+            <div>
+              <label for="origin">Origen</label>
+              <select id="origin">
+                <option>Medellín EOH</option><option>Quibdó</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="flightNumber">Número de vuelo</label>
+              <input id="flightNumber" placeholder="Ej: SKNQ-102" />
+            </div>
+          </div>
+          <button id="startFlight" class="btn-green">INICIAR REGISTRO</button>
+        </div>
+
+        <div class="card hidden" id="activeFlightCard">
+          <div id="flightInfo" class="status"></div>
+          <div class="counter" id="flightCounter">Vuelo actual: 0 pasajeros registrados</div>
+          <br />
+          <button id="scanBtn" class="btn-green">ESCANEAR PASAJERO</button>
+          <br /><br />
+          <button id="closeFlight" class="btn-red">CERRAR VUELO Y GENERAR REPORTE</button>
+        </div>
+
+        <div class="card hidden" id="scannerCard">
+          <h2>Escáner</h2>
+          <div id="reader"></div>
+          <br />
+          <button id="stopScan" class="btn-black">CERRAR CÁMARA</button>
+          <p id="scanStatus"></p>
+        </div>
+
+        <div class="card hidden" id="confirmCard">
+          <h2>Formulario de confirmación</h2>
+          <div class="row two">
+            <div><label>Tipo documento</label><select id="docType"><option>Cédula</option><option>Pasaporte</option></select></div>
+            <div><label>Documento</label><input id="docNumber" /></div>
+          </div>
+          <div class="row two">
+            <div><label>Apellidos</label><input id="lastNames" /></div>
+            <div><label>Nombres</label><input id="firstNames" /></div>
+          </div>
+          <div class="row two">
+            <div><label>Fecha nacimiento</label><input id="birthDate" type="date" /></div>
+            <div><label>Edad</label><input id="age" readonly /></div>
+          </div>
+          <div class="row two">
+            <div><label>Sexo</label><select id="sex"><option value="">No especificado</option><option>M</option><option>F</option></select></div>
+            <div><label>Nacionalidad</label><input id="nationality" value="COL" /></div>
+          </div>
+          <div class="row two">
+            <div><label>Motivo viaje</label><select id="travelReason"><option>Turismo</option><option>Residente</option><option>Trabajo</option></select></div>
+            <div><label>Observaciones</label><input id="notes" placeholder="Opcional" /></div>
+          </div>
+          <button id="savePassenger" class="btn-green">GUARDAR PASAJERO</button>
+        </div>
+
+        <div class="card hidden" id="manifestCard">
+          <h2>Manifiesto del vuelo</h2>
+          <table>
+            <thead><tr><th>Nombre</th><th>Doc</th><th>Nacionalidad</th><th>Edad</th><th>Motivo</th><th>Acciones</th></tr></thead>
+            <tbody id="manifestBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="historialView" class="hidden">
+        <div class="card">
+          <h2>Historial de vuelos</h2>
+          <label>Buscar por fecha o documento</label>
+          <input id="historySearch" placeholder="2026-09-10 o 12345678" />
+          <div id="historyList"></div>
+        </div>
+      </section>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.3/dist/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const STORAGE_KEY = "nuqui-offline-flights-v1";
+      let currentFlight = null;
+      let editingPassengerId = null;
+      let scanner = null;
+      const zxingReader = new ZXing.BrowserMultiFormatReader();
+
+      const loadHistory = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      const saveHistory = (history) => localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      const asDate = (s) => s ? new Date(s + "T00:00:00") : null;
+      const toISODate = (date) => date ? new Date(date).toISOString().slice(0,10) : "";
+      const ageFromDate = (dob) => {
+        const d = asDate(dob); if (!d) return "";
+        const n = new Date();
+        let age = n.getFullYear() - d.getFullYear();
+        const m = n.getMonth() - d.getMonth();
+        if (m < 0 || (m === 0 && n.getDate() < d.getDate())) age--;
+        return age >= 0 ? age : "";
+      };
+
+      const normalize = (txt) => (txt || "").replace(/\s+/g, " ").trim();
+
+      const parseCedulaPdf417 = (raw) => {
+        const text = normalize(raw.replace(/\r/g, "\n"));
+        const tokens = text.split(/[@\n]+/).map((t) => normalize(t)).filter(Boolean);
+        const digits = text.match(/\b\d{6,12}\b/g) || [];
+        const names = tokens.filter((t) => /^[A-ZÁÉÍÓÚÑ ]{3,}$/.test(t) && !/^M$|^F$/.test(t));
+        const birth = (text.match(/\b(19|20)\d{2}[-\/]?(0[1-9]|1[0-2])[-\/]?([0-2][0-9]|3[01])\b/) || [])[0] || "";
+        const formattedBirth = birth ? birth.replace(/\//g, "-").replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3") : "";
+        const sex = (text.match(/\b([MF])\b/) || [])[1] || "";
+        return {
+          docType: "Cédula",
+          docNumber: digits[0] || "",
+          lastNames: names[0] || "",
+          firstNames: names[1] || "",
+          birthDate: formattedBirth,
+          sex,
+          nationality: "COL"
+        };
+      };
+
+      const parseMrzPassport = (raw) => {
+        const lines = raw.split(/\n/).map((l) => l.trim()).filter((l) => l.includes("<"));
+        const l1 = lines.find((l) => l.startsWith("P<")) || "";
+        const l2 = lines.find((l) => /^([A-Z0-9<]){30,}$/.test(l)) || "";
+        const namesPart = l1.slice(5).split("<<");
+        const lastNames = (namesPart[0] || "").replace(/</g, " ").trim();
+        const firstNames = (namesPart[1] || "").replace(/</g, " ").trim();
+        return {
+          docType: "Pasaporte",
+          docNumber: l2.slice(0, 9).replace(/</g, ""),
+          nationality: l2.slice(10, 13).replace(/</g, "") || "",
+          firstNames,
+          lastNames,
+          birthDate: "",
+          sex: ""
+        };
+      };
+
+      const parseScan = (raw) => {
+        const cleaned = normalize(raw);
+        if ((cleaned.match(/</g) || []).length > 8 && cleaned.includes("P<")) return parseMrzPassport(raw);
+        return parseCedulaPdf417(raw);
+      };
+
+      const setConfirmData = (data) => {
+        $("docType").value = data.docType || "Cédula";
+        $("docNumber").value = data.docNumber || "";
+        $("lastNames").value = data.lastNames || "";
+        $("firstNames").value = data.firstNames || "";
+        $("birthDate").value = data.birthDate || "";
+        $("sex").value = data.sex || "";
+        $("nationality").value = data.nationality || "COL";
+        $("travelReason").value = data.travelReason || "Turismo";
+        $("notes").value = data.notes || "";
+        $("age").value = ageFromDate($("birthDate").value);
+        $("confirmCard").classList.remove("hidden");
+      };
+
+      const renderManifest = () => {
+        const body = $("manifestBody");
+        body.innerHTML = "";
+        if (!currentFlight) return;
+        currentFlight.passengers.forEach((p) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${p.lastNames} ${p.firstNames}</td><td>${p.docNumber}</td><td>${p.nationality || ""}</td><td>${p.age || ""}</td><td>${p.travelReason}</td><td>
+            <button class="btn-small btn-black" data-edit="${p.id}">Editar</button>
+            <button class="btn-small btn-red" data-del="${p.id}">Borrar</button></td>`;
+          body.appendChild(tr);
+        });
+        $("flightCounter").textContent = `Vuelo actual: ${currentFlight.passengers.length} pasajeros registrados`;
+        $("manifestCard").classList.remove("hidden");
+      };
+
+      const buildRows = (flight) => flight.passengers.map((p) => [
+        `${p.lastNames} ${p.firstNames}`.trim(), p.docNumber, p.nationality || "", p.age || "", p.travelReason
+      ]);
+
+      const fileSafe = (s) => (s || "vuelo").replace(/[^a-z0-9_-]/gi, "_");
+
+      const exportPdf = (flight) => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(16); doc.text("Aeropuerto Nuquí - Manifiesto de vuelo", 14, 16);
+        doc.setFontSize(11);
+        doc.text(`Fecha: ${flight.closedAt || flight.startedAt}`, 14, 24);
+        doc.text(`Aerolínea: ${flight.airline} | Origen: ${flight.origin} | Vuelo: ${flight.flightNumber}`, 14, 30);
+        doc.autoTable({ head: [["Nombre", "Doc", "Nacionalidad", "Edad", "Motivo"]], body: buildRows(flight), startY: 36, styles: { fontSize: 9 } });
+        doc.save(`manifiesto_${fileSafe(flight.flightNumber)}.pdf`);
+      };
+
+      const exportExcel = (flight) => {
+        const rows = buildRows(flight);
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([["Aeropuerto Nuquí"], [], ["Fecha", flight.closedAt || flight.startedAt], ["Aerolínea", flight.airline], ["Origen", flight.origin], ["Vuelo", flight.flightNumber], [], ["Nombre", "Doc", "Nacionalidad", "Edad", "Motivo"], ...rows]);
+        XLSX.utils.book_append_sheet(wb, ws, "Manifiesto");
+        XLSX.writeFile(wb, `manifiesto_${fileSafe(flight.flightNumber)}.xlsx`);
+      };
+
+      const savePassenger = () => {
+        if (!currentFlight) return;
+        const passenger = {
+          id: editingPassengerId || crypto.randomUUID(),
+          docType: $("docType").value,
+          docNumber: normalize($("docNumber").value),
+          lastNames: normalize($("lastNames").value),
+          firstNames: normalize($("firstNames").value),
+          birthDate: $("birthDate").value,
+          age: ageFromDate($("birthDate").value),
+          sex: $("sex").value,
+          nationality: normalize($("nationality").value),
+          travelReason: $("travelReason").value,
+          notes: normalize($("notes").value)
+        };
+        if (!passenger.docNumber) return alert("Documento requerido");
+        const idx = currentFlight.passengers.findIndex((p) => p.id === passenger.id);
+        if (idx >= 0) currentFlight.passengers[idx] = passenger; else currentFlight.passengers.push(passenger);
+        editingPassengerId = null;
+        $("confirmCard").classList.add("hidden");
+        renderManifest();
+      };
+
+      const closeFlight = () => {
+        if (!currentFlight) return;
+        if (!currentFlight.passengers.length) return alert("Debe registrar al menos 1 pasajero.");
+        currentFlight.closedAt = toISODate(new Date());
+        exportPdf(currentFlight);
+        exportExcel(currentFlight);
+        const history = loadHistory();
+        history.unshift(currentFlight);
+        saveHistory(history);
+        alert("Vuelo cerrado y reportes generados sin internet.");
+        currentFlight = null;
+        $("activeFlightCard").classList.add("hidden");
+        $("manifestCard").classList.add("hidden");
+        $("flightCard").classList.remove("hidden");
+        renderHistory();
+      };
+
+      const stopScanner = async () => {
+        if (!scanner) return;
+        try { await scanner.stop(); await scanner.clear(); } catch (_) {}
+        scanner = null;
+        $("scannerCard").classList.add("hidden");
+      };
+
+      const startScanner = async () => {
+        $("scannerCard").classList.remove("hidden");
+        $("scanStatus").textContent = "Inicializando cámara trasera...";
+        scanner = new Html5Qrcode("reader");
+        try {
+          await zxingReader.listVideoInputDevices();
+          await scanner.start(
+            { facingMode: { exact: "environment" } },
+            {
+              fps: 10,
+              qrbox: { width: 300, height: 140 },
+              formatsToSupport: [Html5QrcodeSupportedFormats.PDF_417, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128]
+            },
+            async (decodedText) => {
+              $("scanStatus").textContent = "Documento leído.";
+              const parsed = parseScan(decodedText);
+              await stopScanner();
+              setConfirmData(parsed);
+            }
+          );
+          $("scanStatus").textContent = "Alinee cédula (PDF417) o MRZ del pasaporte.";
+        } catch (err) {
+          $("scanStatus").textContent = "No se pudo iniciar cámara trasera, se intentará cámara disponible.";
+          try {
+            await scanner.start(
+              { facingMode: "environment" },
+              { fps: 8 },
+              async (decodedText) => { const parsed = parseScan(decodedText); await stopScanner(); setConfirmData(parsed); }
+            );
+          } catch (e) {
+            $("scanStatus").textContent = "Error de cámara: " + e;
+          }
+        }
+      };
+
+      const renderHistory = () => {
+        const query = normalize($("historySearch").value).toLowerCase();
+        const flights = loadHistory().filter((f) => {
+          if (!query) return true;
+          const dateHit = (f.closedAt || "").includes(query) || (f.startedAt || "").includes(query);
+          const flightHit = (f.flightNumber || "").toLowerCase().includes(query);
+          const docHit = (f.passengers || []).some((p) => (p.docNumber || "").includes(query));
+          return dateHit || docHit || flightHit;
+        });
+        $("historyList").innerHTML = flights.map((f, i) => `
+          <div class="card">
+            <b>${f.airline} - ${f.flightNumber}</b><br/>Origen: ${f.origin}<br/>Fecha: ${f.closedAt || f.startedAt}<br/>Pasajeros: ${f.passengers.length}
+            <div class="row two" style="margin-top:8px;">
+              <button class="btn-green btn-small" data-pdf="${i}">Descargar PDF</button>
+              <button class="btn-black btn-small" data-xlsx="${i}">Descargar Excel</button>
+            </div>
+          </div>
+        `).join("") || "<p>No hay vuelos guardados.</p>";
+        $("historyList").querySelectorAll("button[data-pdf]").forEach((b) => b.onclick = () => exportPdf(flights[+b.dataset.pdf]));
+        $("historyList").querySelectorAll("button[data-xlsx]").forEach((b) => b.onclick = () => exportExcel(flights[+b.dataset.xlsx]));
+      };
+
+      $("birthDate").onchange = () => $("age").value = ageFromDate($("birthDate").value);
+      $("savePassenger").onclick = savePassenger;
+      $("scanBtn").onclick = startScanner;
+      $("stopScan").onclick = stopScanner;
+      $("closeFlight").onclick = closeFlight;
+      $("historySearch").oninput = renderHistory;
+
+      $("startFlight").onclick = () => {
+        const number = normalize($("flightNumber").value);
+        if (!number) return alert("Ingrese número de vuelo");
+        currentFlight = {
+          id: crypto.randomUUID(),
+          airline: $("airline").value,
+          origin: $("origin").value,
+          flightNumber: number,
+          startedAt: toISODate(new Date()),
+          passengers: []
+        };
+        $("flightCard").classList.add("hidden");
+        $("activeFlightCard").classList.remove("hidden");
+        $("flightInfo").textContent = `${currentFlight.airline} | ${currentFlight.origin} | Vuelo ${currentFlight.flightNumber}`;
+        renderManifest();
+      };
+
+      $("manifestBody").onclick = (e) => {
+        const editId = e.target.dataset.edit;
+        const delId = e.target.dataset.del;
+        if (!currentFlight) return;
+        if (editId) {
+          const p = currentFlight.passengers.find((x) => x.id === editId);
+          if (!p) return;
+          editingPassengerId = p.id;
+          setConfirmData(p);
+        }
+        if (delId) {
+          currentFlight.passengers = currentFlight.passengers.filter((x) => x.id !== delId);
+          renderManifest();
+        }
+      };
+
+      $("showRegistro").onclick = () => { $("registroView").classList.remove("hidden"); $("historialView").classList.add("hidden"); };
+      $("showHistorial").onclick = () => { $("registroView").classList.add("hidden"); $("historialView").classList.remove("hidden"); renderHistory(); };
+
+      if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
+      renderHistory();
+    </script>
+  </body>
+</html>
