@@ -1,0 +1,16 @@
+{
+  "name": "Aeropuerto Nuquí - Registro Offline",
+  "short_name": "Nuquí Offline",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#006d2c",
+  "lang": "es-CO",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
